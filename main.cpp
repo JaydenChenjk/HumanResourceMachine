@@ -9,9 +9,10 @@ vector<int> input;
 vector<int> target;
 int current_block;
 vector<int> output;
-vector<int> spaces;
+vector<int> space;
 int instruction_count;
-int index = 0;
+int position = 0;
+int pointer = 0;
 
 struct INSTRUCTIONS {
     string name;
@@ -70,29 +71,70 @@ void load_instructions_from_file(const string& file_path) {
 }
 
 void inbox(int i) {
-    if (index < input.size()) {
-        current_block = input[index];
-        index++;
+    if (position < input.size()) {
+        current_block = input[position];
+        position++;
     }
     else
         cout << "Error on instruction " << (i + 1) << endl;
 }
 
 void outbox(int i) {
-    if (current_block != -1) {
+    if (current_block != -65536) {
         output.push_back(current_block);
-        current_block = -1;
+        current_block = -65536;
     }
     else
         cout << "Error on instruction " << (i + 1) << endl;
 }
 
+void add(int i, int x) {
+    if ((space[x]!=-65536)&&(x>=0)&&(x<3))
+        current_block+=space[x];
+    else
+        cout << "Error on instruction " << (i + 1) << endl;
+}
+
+void sub(int i, int x) {
+    if ((space[x]!=-65536)&&(x>=0)&&(x<3))
+        current_block+=space[x];
+    else
+        cout << "Error on instruction " << (i + 1) << endl;
+}
+
+void copyto(int i, int x) {
+    if (current_block != -65536)
+        space[x]=current_block;
+    else
+        cout << "Error on instruction " << (i + 1) << endl;
+}
+
+void copyfrom(int i, int x) {
+    if (space[x] != -65536)
+        current_block=space[x];
+    else
+        cout << "Error on instruction " << (i + 1) << endl;
+}
+
+void jump(int& i, int x) {
+    if(x<=instructions.size())
+        i=x;
+    else
+        cout << "Error on instruction " << (i + 1) << endl;
+}
+
+void jumpifzero(int &i,int x) {
+    if((current_block==0)&&(x<=instructions.size()))
+        i=x;
+    else if((x>instructions.size())||(current_block!=-65536))
+        cout << "Error on instruction " << (i + 1) << endl;
+}
 
 
 void run1() {
     for (int i = 0; i < instructions.size(); i++) {
         cout << (i + 1) << " " << instructions[i].name;
-        if(instructions[i].number!=-1)
+        if(instructions[i].number!=-65536)
             cout << " " << instructions[i].number;
         cout << endl;
 
@@ -110,19 +152,49 @@ void run1() {
         cout << "Fail" << endl;
 }
 
-void run2() {
-    for (int i = 0; i < instructions.size(); i++) {
+void run2or3() {
+    for (int i=0;i<3;i++)
+        space[i]=-65536;
+
+    int i=0;
+    while(i < instructions.size()) {
         cout << (i + 1) << " " << instructions[i].name;
-        if(instructions[i].number!=-1)
+        if(instructions[i].number!=-65536)
             cout << " " << instructions[i].number;
         cout << endl;
 
-        if (instructions[i].name == "inbox")
+        if (instructions[i].name == "inbox") {
             inbox(i);
-        else if (instructions[i].name == "outbox")
+            i++;
+        }
+        else if (instructions[i].name == "outbox") {
             outbox(i);
-        else if (instructions[i].name == "add")
-            add(i);
+            i++;
+        }
+        else if (instructions[i].number != -65536) {
+            if (instructions[i].name == "add") {
+                add(i,instructions[i].number);
+                i++;
+            }
+            else if (instructions[i].name == "sub") {
+                sub(i,instructions[i].number);
+                i++;
+            }
+            else if (instructions[i].name == "copyto") {
+                copyto(i,instructions[i].number);
+                i++;
+            }
+            else if (instructions[i].name == "copyfrom") {
+                copyfrom(i,instructions[i].number);
+                i++;
+            }
+            else if (instructions[i].name == "jump") {
+                jump(i,instructions[i].number);
+            }
+            else if (instructions[i].name == "jumpifzero") {
+                jumpifzero(i,instructions[i].number);
+            }
+        }
         else
             cout << "Error on instruction " << (i + 1) << endl;
     }
@@ -137,7 +209,7 @@ int main() {
     vector<int> input = {1, 2};
     vector<int> target = {1, 2};
     for(int i=0;i<instruction_count;i++) {
-        instructions[i].name=-1;
+        instructions[i].number=-65536;
     }
 
     string mode;
