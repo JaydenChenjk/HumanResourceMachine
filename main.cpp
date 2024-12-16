@@ -9,24 +9,35 @@ using namespace std;
 int level;
 vector<int> input;
 vector<int> target;
-int current_block;
+int current_block = -65536;
 vector<int> output;
 vector<int> space;
 int instruction_count;
 int position = 0;
-int pointer = 0;
-bool error = false;
-
-struct INSTRUCTIONS {
+bool error_flag = false;
+struct INSTRUCTION {
     string name;
     int number;
 };
-vector<INSTRUCTIONS> instructions(instruction_count);
+
+vector<INSTRUCTION> instructions;
+
+void load_instructions_from_keyboard();
+void inbox(int i);
+void outbox(int i);
+void add_op(int i, int x);
+void sub_op(int i, int x);
+void copyto(int i, int x);
+void copyfrom(int i, int x);
+void jump(int& i, int x);
+void jumpifzero(int& i, int x);
+void run();
 
 void load_instructions_from_keyboard() {
     cin >> level;
     cin >> instruction_count;
     cin.ignore();
+
     instructions.resize(instruction_count);
     for (int i = 0; i < instruction_count; i++) {
         string instruction;
@@ -44,7 +55,6 @@ void load_instructions_from_keyboard() {
     }
 }
 
-
 void inbox(int i) {
     if (position < input.size()) {
         current_block = input[position];
@@ -52,7 +62,7 @@ void inbox(int i) {
     }
     else {
         cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+        error_flag = true;
     }
 }
 
@@ -63,101 +73,137 @@ void outbox(int i) {
     }
     else {
         cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+        error_flag = true;
     }
 }
 
-void add(int i, int x) {
-    if ((space[x]!=-65536)&&(x>=0)&&(x<3))
-        current_block+=space[x];
-    else{
+void add_op(int i, int x) {
+    if (x >= 0 && x < space.size() && space[x] != -65536)
+        current_block += space[x];
+    else {
         cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+        error_flag = true;
     }
 }
 
-void sub(int i, int x) {
-    if ((space[x]!=-65536)&&(x>=0)&&(x<3))
-        current_block+=space[x];
-    else{
+void sub_op(int i, int x) {
+    if (x >= 0 && x < space.size() && space[x] != -65536)
+        current_block -= space[x];
+    else {
         cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+        error_flag = true;
     }
 }
 
 void copyto(int i, int x) {
-    if (current_block != -65536)
-        space[x]=current_block;
-    else{
+    if (x >= 0 && x < space.size()) {
+        if (current_block != -65536)
+            space[x] = current_block;
+        else {
+            cout << "Error on instruction " << (i + 1) << endl;
+            error_flag = true;
+        }
+    }
+    else {
         cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+        error_flag = true;
     }
 }
 
 void copyfrom(int i, int x) {
-    if (space[x] != -65536)
-        current_block=space[x];
-    else{
+    if (x >= 0 && x < space.size()) {
+        if (space[x] != -65536)
+            current_block = space[x];
+        else {
+            cout << "Error on instruction " << (i + 1) << endl;
+            error_flag = true;
+        }
+    }
+    else {
         cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+        error_flag = true;
     }
 }
 
 void jump(int& i, int x) {
-    if(x<=instructions.size())
-        i=x;
-    else{
+    if (x >= 0 && x < instruction_count) {
+        i = x - 1;
+    }
+    else {
         cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+        error_flag = true;
     }
 }
 
-void jumpifzero(int &i,int x) {
-    if((current_block==0)&&(x<=instructions.size()))
-        i=x;
-    else if((x>instructions.size())||(current_block!=-65536)){
-        cout << "Error on instruction " << (i + 1) << endl;
-        error = true;
+void jumpifzero(int& i, int x) {
+    if (current_block == 0) {
+        if (x >= 0 && x < instruction_count)
+            i = x - 1;
+        else {
+            cout << "Error on instruction " << (i + 1) << endl;
+            error_flag = true;
+        }
+    }
+    else {
+        if (current_block == -65536) {
+            cout << "Error on instruction " << (i + 1) << endl;
+            error_flag = true;
+        }
     }
 }
-
 
 void run() {
     if (level == 1) {
         input = {1, 2};
         target = {1, 2};
-    } else if (level == 2) {
+    }
+    else if (level == 2) {
         input = {3, 9, 5, 1, -2, -2, 9, -9};
         target = {-6, 6, 4, -4, 0, 0, 18, -18};
-    } else if (level == 3) {
+    }
+    else if (level == 3) {
         input = {6, 2, 7, 7, -9, 3, -3, -3};
         target = {7, -3};
     }
 
-    for (int i = 0; i < instruction_count; i++) {
+    int i = 0;
+    while (i < instruction_count) {
+        if (error_flag)
+            break;
+
         if (instructions[i].name == "inbox") {
             inbox(i);
-        } else if (instructions[i].name == "outbox") {
-            outbox(i);
-        } else if (instructions[i].name == "add") {
-            add(i, instructions[i].number);
-        } else if (instructions[i].name == "sub") {
-            sub(i, instructions[i].number);
-        } else if (instructions[i].name == "copyto") {
-            copyto(i, instructions[i].number);
-        } else if (instructions[i].name == "copyfrom") {
-            copyfrom(i, instructions[i].number);
-        } else if (instructions[i].name == "jump") {
-            jump(i, instructions[i].number);
-        } else if (instructions[i].name == "jumpifzero") {
-            jumpifzero(i, instructions[i].number);
-        } else {
-            cout << "Error on instruction " << (i + 1) << endl;
-            return;
         }
+        else if (instructions[i].name == "outbox") {
+            outbox(i);
+        }
+        else if (instructions[i].name == "add") {
+            add_op(i, instructions[i].number);
+        }
+        else if (instructions[i].name == "sub") {
+            sub_op(i, instructions[i].number);
+        }
+        else if (instructions[i].name == "copyto") {
+            copyto(i, instructions[i].number);
+        }
+        else if (instructions[i].name == "copyfrom") {
+            copyfrom(i, instructions[i].number);
+        }
+        else if (instructions[i].name == "jump") {
+            jump(i, instructions[i].number);
+        }
+        else if (instructions[i].name == "jumpifzero") {
+            jumpifzero(i, instructions[i].number);
+        }
+        else {
+            cout << "Error on instruction " << (i + 1) << endl;
+            error_flag = true;
+        }
+
+        i++;
     }
 
-    if (error==true)
+    if (error_flag)
         return;
 
     if (output == target)
@@ -167,12 +213,9 @@ void run() {
 }
 
 int main(){
-
-    for(int i=0;i<instruction_count;i++) {
-        instructions[i].number=-65536;
-    }
-
     load_instructions_from_keyboard();
+
+    space.assign(3, -65536);
 
     run();
 
