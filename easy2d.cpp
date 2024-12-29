@@ -316,6 +316,7 @@ void load_instructions_from_keyboard() {
         while (isPressed_Enter == false)
             Press1(insta);
         instruction_count = stoi(insta);
+        onUpdate();
 
         instructions.resize(instruction_count);
         instruction.resize(instruction_count);
@@ -748,7 +749,17 @@ void jumpifzero(int& i, int x, easy2d::Sprite* robot) {//缺少指针动画
     }
 }
 
-
+template <typename T>
+string arrayToString(const vector<T>& vec) {
+    stringstream ss;
+    for (size_t i = 0; i < vec.size(); ++i) {
+        if (i != 0) {
+            ss << ",";  
+        }
+        ss << vec[i];  
+    }
+    return ss.str();
+}
 
 
 
@@ -770,6 +781,19 @@ bool run() {
         robot->addChild(rb_text);
         rb_text->setPos(50, 10);
         scene->addChild(robot);
+
+        string INPUT, TARGET;
+        INPUT = arrayToString(input);
+        TARGET = arrayToString(target);
+
+        auto input_display = gcnew Text(INPUT);
+        auto target_display = gcnew Text(TARGET);
+        scene->addChild(input_display);
+        input_display->setAnchor(0, 0.5f);
+        input_display->setPos(1200, 150);
+        scene->addChild(target_display);
+        target_display->setAnchor(0, 0.5f);
+        target_display->setPos(1200, 200);
 
         if (level == 1) {
             prepare_inbricks(2);
@@ -838,12 +862,13 @@ bool run() {
             robot->setAnchor(0.5f, 0.5f);
             robot->setPos(180, 200);
 
-            Text* display = new Text[instruction_count];
+            /*Text* display = new Text[instruction_count];
             for (int i = 0;i < instruction_count;i++) {
                 display[i].setText(instruction[i]);
                 display[i].setAnchor(0, 0.5f);
                 display[i].setPos(650, 150 + i * 15);
             }
+            */
 
             scene->addChild(pointer0);
             pointer0->setAnchor(1, 0.5f);
@@ -865,7 +890,7 @@ bool run() {
 
             for (int i = 0;i < 8;i++) {
                 brick[i] = new Node();
-                square[i] = new Sprite("C:\\Users\\fyh_1\\Desktop\\programme\\cxsjjc\\Ming's robot\\VSaccestories\\Project1\\rescorce\\block4.png");
+                square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
                 string num0 = to_string(input[i]);
                 number[i] = new Text(num0);
                 brick[i]->addChild(square[i]);
@@ -879,14 +904,7 @@ bool run() {
             robot->setAnchor(0.5f, 0.5f);
             robot->setPos(180, 200);
 
-            Text* display[100];
-            for (int i = 0;i < instruction_count;i++) {
-                display[i] = new Text(instruction[i]);
-                scene->addChild(display[i]);
-                display[i]->setAnchor(0, 0.5f);
-                display[i]->setPos(650, 150 + i * 15);
-            }
-
+            
             scene->addChild(pointer0);
             pointer0->setAnchor(1, 0.5f);
             pointer0->setPos(640, 150);
@@ -894,6 +912,42 @@ bool run() {
 
             //end GUI
         }
+        else if (level == 4) {
+            prepare_inbricks(8);
+            space.resize(spacenumber, INT_MIN);
+
+            //begin GUI
+            auto text = new Text("第四关：将输入序列上每个积木的数都除以2，并放在输出序列上。（保证所有数都是整数，不用考虑浮点数的情况）");
+            scene->addChild(text);
+            text->setAnchor(0.5f, 0.5f);
+            text->setPos(400, 100);
+
+
+            for (int i = 0;i < 8;i++) {
+                brick[i] = new Node();
+                square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
+                string num0 = to_string(input[i]);
+                number[i] = new Text(num0);
+                brick[i]->addChild(square[i]);
+                brick[i]->addChild(number[i]);
+                scene->addChild(brick[i]);
+                brick[i]->setAnchor(0.5f, 0.5f);
+                brick[i]->setPos(150, 200 + 40 * i);
+            }
+
+            scene->addChild(robot);
+            robot->setAnchor(0.5f, 0.5f);
+            robot->setPos(180, 200);
+
+            
+            scene->addChild(pointer0);
+            pointer0->setAnchor(1, 0.5f);
+            pointer0->setPos(640, 150);
+
+
+            //end GUI
+            }
+
 
         //Game::start();
 
