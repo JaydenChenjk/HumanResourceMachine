@@ -1,0 +1,17 @@
+182
+42
+
+14
+
+9
+inbox
+outbox
+copyfrom
+copyto
+add
+sub
+jump
+jumpifzero
+jumpifnegative
+
+3
