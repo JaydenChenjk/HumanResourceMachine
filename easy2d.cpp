@@ -49,10 +49,13 @@ Sprite* square[8];
 Sprite* out_square[20];/////
 Text* number[8];
 Text* out_num[20];/////
+ShapeNode* SPAces[5];
+Text* space_num[5];
 vector<Sequence*> bricks_ani;//1到8是输入输出的block
 vector<Sequence*> out_bricks_ani;
 int destination_count = 0;
 int space_brick[3];
+float wait_time = 0;
 auto pointer0 = new Sprite();
 
 int Load_menu()//载入目录数据
@@ -138,7 +141,6 @@ void Load_init_int(vector<int>& inputn)
         inputn[i] = stoi(inputs[i]);
 }
 
-
 void Press1(string& instruction000) {
     bool isPressed_a = Input::isPressed(KeyCode::A);
     bool isPressed_b = Input::isPressed(KeyCode::B);
@@ -180,6 +182,7 @@ void Press1(string& instruction000) {
 
     if (isPressed_a) {
         instruction000 += 'a';  // a -> a
+
     }
     else if (isPressed_b) {
         instruction000 += 'b';  // b -> b
@@ -293,35 +296,90 @@ void Press1(string& instruction000) {
     return;
 }
 
-void onUpdate()
+void onUpdate(Scene *scene)
 {
     vector<string> label(instruction_count);
-    for (int i = 0;i < instruction_count;i++) {
+    for (int i = 0; i < instruction_count; i++) {
         label[i] = "";
-        if(instruction[i]!="")
-            label[i]=instruction[i];
+        if (instruction[i] != "")
+            label[i] = instruction[i];
     }
     Text* display = new Text[instruction_count];
-    for (int i = 0;i < instruction_count;i++) {
+    for (int i = 0; i < instruction_count; i++) {
         display[i].setText(label[i]);
+        display[i].addChild(scene);
         display[i].setAnchor(0, 0.5f);
         display[i].setPos(650, 150 + i * 15);
     }
 }
 
-void load_instructions_from_keyboard() {
+
+void load_instructions_from_keyboard_2() {
+    try {
+        //cin >> level;
+        cin >> instruction_count;
+        if (instruction_count == 0)
+        {
+            cout << "Invalid Input!" << endl;
+            return;
+        }
+        cin.ignore();
+        instructions.resize(instruction_count);
+        instruction.resize(instruction_count);
+        for (int i = 0; i < instruction_count; i++) {
+
+            getline(cin, instruction[i]);
+
+            stringstream ss(instruction[i]);
+            string name;
+            double number = INT_MIN;
+
+            ss >> name;
+            if (ss >> number) {
+                if (name != "inbox" && name != "outbox") {
+                    instructions[i].number = int(number);
+                    if (floor(number) != number || floor(number) < 0)
+                        instructions[i].is_num_int = 0;
+                }
+                else
+                    instructions[i].is_num_int = 0;//指令数不符
+            }
+            else
+            {
+                if (name != "inbox" && name != "outbox")
+                    instructions[i].is_num_int = 0;//指令数过少
+            }
+
+            if (ss >> number) {
+                instructions[i].is_num_int = 0;//指令数过多
+            }
+
+            instructions[i].name = name;
+        }
+    }
+    catch (...) {
+        cout << "Invalid input." << endl;
+    }
+}
+
+void load_instructions_from_keyboard(Scene *scene) {
     try {
         string insta;
         bool isPressed_Enter = Input::isPressed(KeyCode::Enter);
         while (isPressed_Enter == false)
             Press1(insta);
         instruction_count = stoi(insta);
-        onUpdate();
+        if (instruction_count == 0)
+        {
+            cout << "Invalid Input!" << endl;
+            return;
+        }
+        onUpdate(scene);
 
         instructions.resize(instruction_count);
         instruction.resize(instruction_count);
         for (int i = 0; i < instruction_count; i++) {
-            while(isPressed_Enter==false)
+            while (isPressed_Enter == false)
                 Press1(instruction[i]);
 
             stringstream ss(instruction[i]);
@@ -356,7 +414,6 @@ void load_instructions_from_keyboard() {
         cout << "Invalid input." << endl;
     }
 }
-
 
 void load_instructions_from_file(const string& file_path, vector<INSTRUCTIONS>instr) {
     int tmp;
@@ -427,8 +484,8 @@ int initial(/*vector<int> &input,vector<int> &target,vector<string> &availables*
 
     try {
         string path = "C:\\Users\\jayde\\source\\repos\\easy2d\\level" + levels + ".txt";
-        //flevel_in.open("C:\\Users\\jayde\\source\\repos\\easy2d\\level0.txt");
-        //flevel_in.close();
+        flevel_in.open("C:\\Users\\jayde\\source\\repos\\easy2d\\level0.txt");
+        flevel_in.close();
         flevel_in.open(path);//打开关卡存储文件
         if (!flevel_in)//判断能否打开;但如果打开路径和原本的路径一样，没有“打开”操作，所以会认为“打开失败”
         {
@@ -546,22 +603,37 @@ void upload_data(string lvplayed)//每一次退出关卡都运行一遍！
 
 }
 
-void check()
+void check(Scene* scene)
 {
+    auto Judge = gcnew Text;
+    Judge->setFont(Font("Palatino Linotype", 130));
+    Judge->setAnchor(0.5f, 0.5f);
+    Judge->setPos(800, 450);
+    Judge->setFillColor(Color::OrangeRed);
+    Judge->setStrokeColor(Color::OrangeRed);
+    Judge->setStrokeWidth(5);
     if (output == target)
-        cout << "Success" << endl;
+    {
+        succeed = true;
+        Judge->setText("Success");
+    }
+
     else
-        cout << "Fail" << endl;
+    {
+        succeed = false;
+        Judge->setText("Fail");
+    }
+    scene->addChild(Judge);
 }
 
-void user_input_cons()
+void user_input_cons(Scene *scene)
 {
     string mode;
     cout << "Choose input mode (keyboard/file): ";
     cin >> mode;
     cin.ignore();
     if (mode == "keyboard")
-        load_instructions_from_keyboard();
+        load_instructions_from_keyboard(scene);
     else if (mode == "file") {
         string file_path;
         cout << "Enter the file path: ";
@@ -570,6 +642,7 @@ void user_input_cons()
     }
     else {
         cout << "Invalid mode." << endl;
+        error_flag = true;
         return;
     }
 }
@@ -585,34 +658,61 @@ void prepare_inbricks(int count)
     return;
 }
 
-void inbox(int i, easy2d::Sprite* robot, Sequence* rb_se, Text* rb_text, Delay* delay) {
+void wait_for_move(int out_index, Delay* delay)
+{
+    for (int j = 0; j < input.size(); j++) {
+        bricks_ani[j]->add(delay->clone());//保留传送带动画
+    }
+    for (int j = 0; j < out_bricks_ani.size(); j++) {
+        out_bricks_ani[j]->add(delay->clone());
+        //可以加一个暂停动画
+    }
+    wait_time += 2.5;
+    return;
+}
+void wait_for_move2(int out_index, Delay* delay)
+{
+    auto delay2 = gcnew Delay(2.0);
+    for (int j = 0; j < input.size(); j++) {
+        bricks_ani[j]->add(delay->clone());//保留传送带动画
+    }
+    for (int j = 0; j < out_bricks_ani.size(); j++) {
+        out_bricks_ani[j]->add(delay2->clone());
+        //可以加一个暂停动画
+    }
+    wait_time += 2.5;
+    return;
+}
+
+void inbox(int i, int out_index, Sequence* rb_se, Text* rb_text, Delay* delay) {
     if (position < input.size()) {
         current_block = input[position];
 
         //GUI        
-        auto moveBy_inbox = gcnew MoveBy(2.5f, Vector2(150, 0));
+        auto moveBy_inbox = gcnew MoveTo(2.5f, Vector2(300, 200));
         string s = std::to_string(current_block);
         int pos = position;
+
         auto changeText = gcnew CallFunc([rb_text, s]() {rb_text->setText(s); });
         auto block_vis = gcnew CallFunc([pos]() {brick[pos]->setVisible(false); });//注意position的调用？
-        auto inbox_act = gcnew Spawn({ moveBy_inbox, changeText });
-        rb_se->add(inbox_act->clone());
-        //bricks_ani[position]->add(moveBy_inbox);
-        //brick[position]->setVisible(false);
+        //auto inbox_act = gcnew Spawn({ moveBy_inbox, changeText});
 
+        rb_se->add(moveBy_inbox->clone());
+        rb_se->add(changeText->clone());
+
+        wait_for_move(out_index, delay);
         bricks_ani[position]->add(block_vis->clone());
-        auto moveBy = gcnew MoveBy(2.5f, Vector2(0, -40));
+
+        auto moveBy = gcnew MoveBy(0.5f, Vector2(0, -60));
+        auto delay2 = gcnew Delay(0.5);
         for (int j = position + 1;j < input.size();j++) {
             bricks_ani[j]->add(moveBy->clone());//保留传送带动画
-            //可以加一个暂停动画
-
         }
-        if (destination_count != 0) {//传送带动画
-            for (int j = 0; j < destination_count; j++) {
-                out_bricks_ani[j]->add(delay->clone());
-                //可以加一个暂停动画
-            }
+        for (int j = 0; j < out_index; j++) {
+            out_bricks_ani[j]->add(delay2->clone());
         }
+        wait_time += 0.5;
+        rb_se->add(delay2->clone());
 
         position++;
     }
@@ -621,37 +721,65 @@ void inbox(int i, easy2d::Sprite* robot, Sequence* rb_se, Text* rb_text, Delay* 
     }
 }
 
-void outbox(int i, easy2d::Sprite* robot, Sequence* rb_se, Text* rb_text, CallFunc* create_out, Delay* delay) {
+void outbox(int i, int out_index, Sequence* rb_se, Scene* scene, Text* rb_text, Delay* delay) {
     if (current_block != INT_MIN) {
         output.push_back(current_block);
-        current_block = INT_MIN;
 
-        //GUI
-        if (destination_count != 0) {//传送带动画
-            auto moveBy = gcnew MoveBy(2.5f, Vector2(0, 40));
-            for (int j = 0;j < destination_count;j++) {
-                out_bricks_ani[j]->add(moveBy->clone());
-                //可以加一个暂停动画
-            }
+
+        //GUI  
+        auto moveBy_outbox = gcnew MoveTo(2.5f, Vector2(1100, 200));
+        auto changeText = gcnew CallFunc([rb_text]() {rb_text->setText(" "); });
+
+        int a = current_block;
+        string num0 = to_string(a);
+        out_brick[out_index + 1] = new Node();//创建新输出块
+        out_square[out_index + 1] = new Sprite();
+        out_num[out_index + 1] = new Text;
+        out_square[out_index]->open("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
+        out_brick[out_index]->addChild(out_square[out_index]);
+        out_num[out_index]->setText(num0);
+        out_num[i]->setAnchor(0.5f, 0.5f);
+        out_num[i]->setPos(25, 25);
+        out_brick[out_index]->addChild(out_num[out_index]);
+        out_brick[out_index]->setAnchor(0.5f, 0.5f);
+        out_brick[out_index]->setPos(1220, 200);
+        out_brick[out_index]->setVisible(false);
+        scene->addChild(out_brick[out_index]);
+
+        auto create_out = gcnew CallFunc([out_index]() {out_brick[out_index]->setVisible(true);});
+        auto outbox_act = gcnew Spawn({ changeText, create_out });
+
+        rb_se->add(moveBy_outbox->clone());
+        rb_se->add(outbox_act->clone());
+        auto seq = new Sequence;
+        out_bricks_ani.push_back(seq);//在下一个来的时候再创建新的sequence.
+        //cout << out_bricks_ani.size();
+
+        //wait_time -= 0.5;
+        float tf = wait_time;
+        auto dl = gcnew Delay(tf);
+        out_bricks_ani[out_index]->add(dl->clone());
+
+        wait_for_move2(out_index, delay);
+
+        auto moveBy = gcnew MoveBy(0.5f, Vector2(0, 60));
+        for (int j = 0; j < out_bricks_ani.size() - 1; j++) {
+            out_bricks_ani[j]->add(moveBy->clone());
         }
 
-
-        auto moveBy_outbox = gcnew MoveBy(2.5f, Vector2(-150, 0));
-        auto changeText = gcnew CallFunc([rb_text]() {rb_text->setText(" "); });        //更改数字动画
-
-        auto outbox_act = gcnew Spawn({ moveBy_outbox, changeText, create_out });
-        rb_se->add(outbox_act->clone());
-
-        auto seq = new Sequence;
-        out_bricks_ani.push_back(seq);//新的outbox
-
-        //bricks_ani[position]->add(moveBy_outbox);（物块动画，现已删除）
+        auto delay2 = gcnew Delay(0.5);
+        out_bricks_ani[out_index]->add(delay2->clone());
         for (int j = position; j < input.size(); j++) {
-            bricks_ani[j]->add(delay->clone());//保留传送带动画
+            bricks_ani[j]->add(delay2->clone());//保留传送带动画
             //可以加一个暂停动画
         }
+        for (int j = 0; j <= out_index; j++) {
+            out_bricks_ani[j]->add(delay2->clone());
+        }
+        wait_time += 0.5;
+        rb_se->add(delay2->clone());
 
-
+        current_block = INT_MIN;
     }
     else {
         cout << "Error on instruction " << (i + 1) << endl;
@@ -659,13 +787,19 @@ void outbox(int i, easy2d::Sprite* robot, Sequence* rb_se, Text* rb_text, CallFu
     }
 }
 
-void add(int i, int x, easy2d::Sprite* robot) {
+void add(int i, int x, int out_index, Sequence* rb_se, Text* rb_text, Delay* delay) {
     if ((space[x] != INT_MIN) && (x >= 0) && (x < spacenumber)) {
         current_block += space[x];
 
         //GUI
-        string CB = to_string(current_block);
-        number[position]->setText(CB);
+        auto moveTo = gcnew MoveTo(2.5f, Point(500 + 120 * x, 500));
+        string s = std::to_string(current_block);
+        auto changeText = gcnew CallFunc([rb_text, s]() {rb_text->setText(s); });
+        //auto inbox_act = gcnew Spawn({ moveTo, changeText });
+        rb_se->add(moveTo);
+        rb_se->add(changeText);
+        wait_for_move(out_index, delay);
+
     }
     else {
         cout << "Error on instruction " << (i + 1) << endl;
@@ -673,13 +807,17 @@ void add(int i, int x, easy2d::Sprite* robot) {
     }
 }
 
-void sub(int i, int x, easy2d::Sprite* robot) {
+void sub(int i, int x, int out_index, Sequence* rb_se, Text* rb_text, Delay* delay) {
     if ((space[x] != INT_MIN) && (x >= 0) && (x < spacenumber)) {
         current_block -= space[x];
 
         //GUI
-        string CB = to_string(current_block);
-        number[position]->setText(CB);
+        auto moveTo = gcnew MoveTo(2.5f, Point(500 + 120 * x, 500));
+        string s = std::to_string(current_block);
+        auto changeText = gcnew CallFunc([rb_text, s]() {rb_text->setText(s); });
+        rb_se->add(moveTo);
+        rb_se->add(changeText);
+        wait_for_move(out_index, delay);
     }
     else {
         cout << "Error on instruction " << (i + 1) << endl;
@@ -687,15 +825,23 @@ void sub(int i, int x, easy2d::Sprite* robot) {
     }
 }
 
-void copyto(int i, int x, easy2d::Sprite* robot) {
+void copyto(int i, int x, int out_index, Sequence* rb_se, Text* blk_text, Delay* delay) {
     if (current_block != INT_MIN && x < spacenumber && x >= 0) {
         space[x] = current_block;
 
         //GUI
-        auto moveTo = gcnew MoveTo(2.5f, Point(300 + 50 * x, 400));
+        //auto moveTo = gcnew MoveTo(2.5f, Point(300+50*x, 400));
         //brick[position]->runAction(moveTo);（物块动画，现已删除）
-        robot->runAction(moveTo->clone());
+        //robot->runAction(moveTo->clone());
         space_brick[x] = position;//这句话啥意思
+
+        auto moveTo = gcnew MoveTo(2.5f, Point(500 + 120 * x, 500));
+        string s = std::to_string(current_block);
+        auto changeText = gcnew CallFunc([blk_text, s]() {blk_text->setText(s); });
+        //auto inbox_act = gcnew Spawn({ moveTow, changeText });
+        rb_se->add(moveTo);
+        rb_se->add(changeText);
+        wait_for_move(out_index, delay);
     }
     else {
         cout << "Error on instruction " << (i + 1) << endl;
@@ -703,16 +849,18 @@ void copyto(int i, int x, easy2d::Sprite* robot) {
     }
 }
 
-void copyfrom(int i, int x, easy2d::Sprite* robot) {
+void copyfrom(int i, int x, int out_index, Sequence* rb_se, Text* rb_text, Delay* delay) {
     if (space[x] != INT_MIN && x < spacenumber && x >= 0) {
         current_block = space[x];
 
         //GUI
-
-        auto moveFrom = gcnew MoveTo(2.5f, Point(300, 200));
-        int ss = space_brick[x];
-        //brick[ss]->runAction(moveFrom);（物块动画，现已删除）
-        robot->runAction(moveFrom->clone());
+        auto moveTo = gcnew MoveTo(2.5f, Point(500 + 120 * x, 500));
+        string s = std::to_string(current_block);
+        auto changeText = gcnew CallFunc([rb_text, s]() {rb_text->setText(s); });
+        //auto inbox_act = gcnew Spawn({ moveTo, changeText });
+        rb_se->add(moveTo);
+        rb_se->add(changeText);
+        wait_for_move(out_index, delay);
         //需要更改数字
     }
 
@@ -749,358 +897,485 @@ void jumpifzero(int& i, int x, easy2d::Sprite* robot) {//缺少指针动画
     }
 }
 
+void addstop(Sequence* rb_se, int pos)
+{
+    auto ani_pause = gcnew Delay(0.5);
+    rb_se->add(ani_pause->clone());
+    for (int j = pos; j < input.size(); j++) {
+        bricks_ani[j]->add(ani_pause->clone());//保留传送带动画
+    }
+    for (int j = 0; j < out_bricks_ani.size(); j++) {
+        out_bricks_ani[j]->add(ani_pause->clone());//保留传送带动画
+    }
+    wait_time += 0.5;
+}/////
+
+
 template <typename T>
 string arrayToString(const vector<T>& vec) {
     stringstream ss;
     for (size_t i = 0; i < vec.size(); ++i) {
         if (i != 0) {
-            ss << ",";  
+            ss << ",";
         }
-        ss << vec[i];  
+        ss << vec[i];
     }
     return ss.str();
 }
 
 
-
-bool run() {
-    if (Game::init()) {
-
-        //GUI
+bool run(Scene* scene) {
+    //GUI
         // 创建一个空场景
-        Window::setTitle("111");
-        Window::setSize(1600, 900);
-        auto scene = new Scene;
-        SceneManager::enter(scene);
-
-        auto bg = gcnew Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\levelbg.png");
-        scene->addChild(bg);
-        auto robot = gcnew Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\robot2.png");
-        robot->setPos(180, 200);
-        auto rb_text = new Text("0");
-        robot->addChild(rb_text);
-        rb_text->setPos(50, 10);
-        scene->addChild(robot);
-
-        string INPUT, TARGET;
-        INPUT = arrayToString(input);
-        TARGET = arrayToString(target);
-
-        auto input_display = gcnew Text(INPUT);
-        auto target_display = gcnew Text(TARGET);
-        scene->addChild(input_display);
-        input_display->setAnchor(0, 0.5f);
-        input_display->setPos(1200, 150);
-        scene->addChild(target_display);
-        target_display->setAnchor(0, 0.5f);
-        target_display->setPos(1200, 200);
-
-        if (level == 1) {
-            prepare_inbricks(2);
-
-            //begin GUI
-            auto bgrec = gcnew Shape(Shape::Rect, Rect(Point(176, 30), Size(1230, 80)));
-            auto bg = gcnew ShapeNode(bgrec);
-            bg->setFillColor(RGB(90, 185, 136));//
-            bg->setStrokeColor(RGB(26, 64, 137));//
-            bg->setStrokeWidth(5);
-            scene->addChild(bg);
-            auto text = new Text("第一关：让机器人取出输入序列上的每个积木，放入输出序列中", Font("Palatino Linotype", 30));
-            scene->addChild(text);
-            text->setAnchor(0.5f, 0.5f);
-            text->setPos(800, 70);
 
 
+    auto bg = gcnew Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\levelbg.png");
+    scene->addChild(bg);
+    auto belt1 = gcnew Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\csdd.png");
+    belt1->setAnchor(0, 1.0f);
+    belt1->setPos(200, 750);
+    auto belt2 = gcnew Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\csd.png");
+    belt2->setAnchor(1.0f, 1.0f);
+    belt2->setPos(1300, 750);
+    scene->addChild(belt1);
+    scene->addChild(belt2);
+
+    auto robot = gcnew Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\robot3.png");
+    robot->setPos(480, 200);
+    auto rb_text = new Text(" ");
+    robot->addChild(rb_text);
+    rb_text->setPos(50, 10);
+    scene->addChild(robot);
+
+    auto bgrec = gcnew Shape(Shape::Rect, Rect(Point(176, 30), Size(1230, 80)));
+    auto bgrec1 = gcnew Shape(Shape::Rect, Rect(Point(1400, 200), Size(80, 300)));
+    //auto bgrec2 = gcnew Shape(Shape::Rect, Rect(Point(1400, 200), Size(80, 300)));
+    auto bg0 = gcnew ShapeNode(bgrec);
+    auto bg1 = gcnew ShapeNode(bgrec1);
+    bg0->setFillColor(RGB(90, 185, 136));//
+    bg0->setStrokeColor(RGB(26, 64, 137));//
+    bg0->setStrokeWidth(5);
+    scene->addChild(bg0);
+    bg1->setFillColor(RGB(90, 185, 136));//
+    bg1->setStrokeColor(RGB(26, 64, 137));//
+    bg1->setStrokeWidth(5);
+    scene->addChild(bg1);
+
+    string INPUT, TARGET;//input和target
+    INPUT = arrayToString(input);
+    TARGET = arrayToString(target);
+
+    /*
+    auto input_display = gcnew Text(INPUT);
+    auto target_display = gcnew Text(TARGET);
+    scene->addChild(input_display);
+    input_display->setAnchor(0, 0.5f);
+    input_display->setPos(200, 450);
+    scene->addChild(target_display);
+    target_display->setAnchor(0, 0.5f);
+    target_display->setPos(200, 500);*/
 
 
-            for (int i = 0;i < 2;i++) {
-                brick[i] = new Node();
-                square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
-                string num0 = to_string(input[i]);
-                number[i] = new Text(num0);
-                brick[i]->addChild(square[i]);
-                brick[i]->addChild(number[i]);
-                scene->addChild(brick[i]);
-                brick[i]->setAnchor(0.5f, 0.5f);
-                brick[i]->setPos(150, 200 + 50 * i);
-            }
 
-            
+    if (level == 1) {
+        prepare_inbricks(3);
 
-            scene->addChild(pointer0);
-            pointer0->setAnchor(1, 0.5f);
-            pointer0->setPos(640, 150);
+        //begin GUI
+        auto bgrec = gcnew Shape(Shape::Rect, Rect(Point(176, 30), Size(1230, 80)));
+        auto bg3 = gcnew ShapeNode(bgrec);
+        bg3->setFillColor(RGB(90, 185, 136));//
+        bg3->setStrokeColor(RGB(26, 64, 137));//
+        bg3->setStrokeWidth(5);
+        scene->addChild(bg3);
 
-            //end GUI
+        auto text = new Text("第一关：让机器人取出输入序列上的每个积木，放入输出序列中", Font("Palatino Linotype", 30));
+        scene->addChild(text);
+        text->setAnchor(0.5f, 0.5f);
+        text->setPos(800, 70);
 
+
+
+
+        for (int i = 0; i < 3; i++) {
+            brick[i] = new Node();
+            square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
+            string num0 = to_string(input[i]);
+            number[i] = new Text(num0);
+            number[i]->setAnchor(0.5f, 0.5f);
+            number[i]->setPos(25, 25);
+            brick[i]->addChild(square[i]);
+            brick[i]->addChild(number[i]);
+            scene->addChild(brick[i]);
+            brick[i]->setAnchor(0.5f, 0.5f);
+            brick[i]->setPos(220, 200 + 60 * i);
         }
-        else if (level == 2) {
-            prepare_inbricks(8);
-            space.resize(spacenumber, INT_MIN);
 
-            //begin GUI
-            auto text = new Text("第二关：对于输入序列中的每两个东西，先把第1个减去第2个，并把结果放在输出序列中，然后把第2个减去第1个，再把结果放在输出序列中，重复。");
-            scene->addChild(text);
-            text->setAnchor(0.5f, 0.5f);
-            text->setPos(400, 100);
-
-
-
-            for (int i = 0;i < 8;i++) {
-                brick[i] = new Node();
-                square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
-                string num0 = to_string(input[i]);
-                number[i] = new Text(num0);
-                brick[i]->addChild(square[i]);
-                brick[i]->addChild(number[i]);
-                scene->addChild(brick[i]);
-                brick[i]->setAnchor(0.5f, 0.5f);
-                brick[i]->setPos(150, 200 + 40 * i);
-            }
-
-            scene->addChild(robot);
-            robot->setAnchor(0.5f, 0.5f);
-            robot->setPos(180, 200);
-
-            /*Text* display = new Text[instruction_count];
-            for (int i = 0;i < instruction_count;i++) {
-                display[i].setText(instruction[i]);
-                display[i].setAnchor(0, 0.5f);
-                display[i].setPos(650, 150 + i * 15);
-            }
-            */
-
-            scene->addChild(pointer0);
-            pointer0->setAnchor(1, 0.5f);
-            pointer0->setPos(640, 150);
-
-            //end GUI
-
+        auto display = gcnew Text[instruction_count];
+        for (int i = 0; i < instruction_count; i++) {
+            display[i].setText(instruction[i]);
+            display[i].setAnchor(0, 0.5f);
+            display[i].setPos(1405, 250 + i * 30);
+            scene->addChild(display + i);
         }
-        else if (level == 3) {
-            prepare_inbricks(8);
-            space.resize(spacenumber, INT_MIN);
 
-            //begin GUI
-            auto text = new Text("第三关：从输入序列中依次取2个数字，如果相等则将其中一个输出，否则扔掉。重复这个过程直到输入传送带为空。");
-            scene->addChild(text);
-            text->setAnchor(0.5f, 0.5f);
-            text->setPos(400, 100);
+        scene->addChild(pointer0);
+        pointer0->setAnchor(1, 0.5f);
+        pointer0->setPos(1380, 150);
 
+        //end GUI
 
-            for (int i = 0;i < 8;i++) {
-                brick[i] = new Node();
-                square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
-                string num0 = to_string(input[i]);
-                number[i] = new Text(num0);
-                brick[i]->addChild(square[i]);
-                brick[i]->addChild(number[i]);
-                scene->addChild(brick[i]);
-                brick[i]->setAnchor(0.5f, 0.5f);
-                brick[i]->setPos(150, 200 + 40 * i);
-            }
+    }
+    else if (level == 2) {
+        prepare_inbricks(8);
+        space.resize(spacenumber, INT_MIN);
 
-            scene->addChild(robot);
-            robot->setAnchor(0.5f, 0.5f);
-            robot->setPos(180, 200);
+        //begin GUI
+        auto text = new Text("第二关：对于输入序列中的每两个东西，\n先把第1个减去第2个，并把结果放在输出序列中，然后把第2个减去第1个，再把结果放在输出序列中，重复。");
+        scene->addChild(text);
+        text->setAnchor(0.5f, 0.5f);
+        text->setPos(800, 70);
 
-            
-            scene->addChild(pointer0);
-            pointer0->setAnchor(1, 0.5f);
-            pointer0->setPos(640, 150);
-
-
-            //end GUI
+        for (int i = 0; i < 3; i++)
+        {
+            auto a = gcnew Shape(Shape::Rect, Rect(Point(500 + 120 * i, 700), Size(70, 70)));
+            SPAces[i] = gcnew ShapeNode(a);
+            SPAces[i]->setFillColor(Color::Chocolate);
+            space_num[i] = gcnew Text("111");
+            space_num[i]->setFont(Font("Arial", 35));
+            space_num[i]->setFillColor(Color::White);
+            space_num[i]->setAnchor(0.5f, 0.5f);
+            space_num[i]->setPos(525 + 120 * i, 725);
+            SPAces[i]->addChild(space_num[i]);
+            scene->addChild(SPAces[i]);
         }
-        else if (level == 4) {
-            prepare_inbricks(8);
-            space.resize(spacenumber, INT_MIN);
 
-            //begin GUI
-            auto text = new Text("第四关：将输入序列上每个积木的数都除以2，并放在输出序列上。（保证所有数都是整数，不用考虑浮点数的情况）");
-            scene->addChild(text);
-            text->setAnchor(0.5f, 0.5f);
-            text->setPos(400, 100);
+        for (int i = 0; i < 8; i++) {
+            brick[i] = new Node();
+            square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
+            string num0 = to_string(input[i]);
+            number[i] = new Text(num0);
+            number[i]->setAnchor(0.5f, 0.5f);
+            number[i]->setPos(25, 25);
+            brick[i]->addChild(square[i]);
+            brick[i]->addChild(number[i]);
+            scene->addChild(brick[i]);
+            brick[i]->setAnchor(0.5f, 0.5f);
+            brick[i]->setPos(220, 200 + 60 * i);
+        }
 
+        /*Text* display = new Text[instruction_count];
+        for (int i = 0; i < instruction_count; i++) {
+            display[i].setText(instruction[i]);
+            display[i].setAnchor(0, 0.5f);
+            display[i].setPos(650, 150 + i * 15);
+        }*/
 
-            for (int i = 0;i < 8;i++) {
-                brick[i] = new Node();
-                square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
-                string num0 = to_string(input[i]);
-                number[i] = new Text(num0);
-                brick[i]->addChild(square[i]);
-                brick[i]->addChild(number[i]);
-                scene->addChild(brick[i]);
-                brick[i]->setAnchor(0.5f, 0.5f);
-                brick[i]->setPos(150, 200 + 40 * i);
-            }
+        scene->addChild(pointer0);
+        pointer0->setAnchor(1, 0.5f);
+        pointer0->setPos(640, 150);
 
-            scene->addChild(robot);
-            robot->setAnchor(0.5f, 0.5f);
-            robot->setPos(180, 200);
-
-            
-            scene->addChild(pointer0);
-            pointer0->setAnchor(1, 0.5f);
-            pointer0->setPos(640, 150);
-
-
-            //end GUI
-            }
-
-
+        //end GUI
         //Game::start();
+    }
+    else if (level == 3) {
+        prepare_inbricks(8);
+        space.resize(spacenumber, INT_MIN);
 
+        //begin GUI
+        auto text = new Text("第三关：从输入序列中依次取2个数字，如果相等则将其中一个输出，\n否则扔掉。重复这个过程直到输入传送带为空。");
+        scene->addChild(text);
+        text->setAnchor(0.5f, 0.5f);
+        text->setPos(800, 70);
 
-        int i = 0, out_index = 0;
-
-        auto rb_se = gcnew Sequence();
-        auto stopp = gcnew Delay(2.5);//每一步的延迟2.5s
-        auto create_out = gcnew CallFunc([out_index, scene]() {
-            out_brick[out_index] = new Node();
-            out_square[out_index] = gcnew Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
-
-            string num0 = to_string(current_block);//currentblock的调用
-            out_num[out_index] = gcnew Text(num0);
-            out_brick[out_index]->addChild(out_square[out_index]);
-            out_brick[out_index]->addChild(out_num[out_index]);
-            scene->addChild(brick[out_index]);
-            brick[out_index]->setAnchor(0.5f, 0.5f);
-            brick[out_index]->setPos(750, 200 + 50);
-            });
-
-
-        while (i < instruction_count) {
-            if (error_flag)
-                break;
-            if (instructions[i].name == "inbox") {
-                inbox(i, robot, rb_se, rb_text, stopp);
-            }
-            else if (instructions[i].name == "outbox") {
-                outbox(i, robot, rb_se, rb_text, create_out, stopp);
-                out_index++;//画图用
-                destination_count++;
-            }
-            else if (instructions[i].name == "add" && level != 1 && instructions[i].is_num_int) {
-                add(i, instructions[i].number, robot);
-            }
-            else if (instructions[i].name == "sub" && level != 1 && instructions[i].is_num_int) {
-                sub(i, instructions[i].number, robot);
-            }
-            else if (instructions[i].name == "copyto" && level != 1 && instructions[i].is_num_int) {
-                copyto(i, instructions[i].number, robot);
-            }
-            else if (instructions[i].name == "copyfrom" && level != 1 && instructions[i].is_num_int) {
-                copyfrom(i, instructions[i].number, robot);
-            }
-            else if (instructions[i].name == "jump" && level != 1 && instructions[i].is_num_int) {
-                jump(i, instructions[i].number, robot);
-            }
-            else if (instructions[i].name == "jumpifzero" && level != 1 && instructions[i].is_num_int) {
-                jumpifzero(i, instructions[i].number, robot);
-            }
-            else {
-                cout << "Error on instruction " << (i + 1) << endl;
-                return true;
-            }
-
-            if (inbox_done)
-                break;
-
-            i++;
-
-            if (error_flag == false) {
-                auto movePointer = gcnew MoveTo(2.5f, Point(640, 150 + i * 15));
-                pointer0->runAction(movePointer);
-            }
-
-
-        }
-
-        robot->runAction(rb_se);
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 3; i++)
         {
-            brick[i]->runAction(bricks_ani[i]);
+            auto a = gcnew Shape(Shape::Rect, Rect(Point(500 + 120 * i, 700), Size(70, 70)));
+            SPAces[i] = gcnew ShapeNode(a);
+            SPAces[i]->setFillColor(Color::Chocolate);
+            space_num[i] = gcnew Text("111");
+            space_num[i]->setFont(Font("Arial", 35));
+            space_num[i]->setFillColor(Color::White);
+            space_num[i]->setAnchor(0.5f, 0.5f);
+            space_num[i]->setPos(525 + 120 * i, 725);
+            SPAces[i]->addChild(space_num[i]);
+            scene->addChild(SPAces[i]);
         }
-        for (int i = 0; i < 1; i++)
+
+        for (int i = 0; i < 8; i++) {
+            brick[i] = new Node();
+            square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
+            string num0 = to_string(input[i]);
+            number[i] = new Text(num0);
+            number[i]->setAnchor(0.5f, 0.5f);
+            number[i]->setPos(25, 25);
+            brick[i]->addChild(square[i]);
+            brick[i]->addChild(number[i]);
+            scene->addChild(brick[i]);
+            brick[i]->setAnchor(0.5f, 0.5f);
+            brick[i]->setPos(220, 200 + 60 * i);
+        }
+
+        /*Text* display[100];
+        for (int i = 0; i < instruction_count; i++) {
+            display[i] = new Text(instruction[i]);
+            scene->addChild(display[i]);
+            display[i]->setAnchor(0, 0.5f);
+            display[i]->setPos(650, 150 + i * 15);
+        }*/
+
+        scene->addChild(pointer0);
+        pointer0->setAnchor(1, 0.5f);
+        pointer0->setPos(640, 150);
+        //end GUI
+    }
+    else if (level == 4) {
+        prepare_inbricks(8);
+        space.resize(spacenumber, INT_MIN);
+
+        //begin GUI
+        auto text = new Text("第四关：将输入序列上每个积木的数都除以2，并放在输出序列上。（保证所有数都是整数，不用考虑浮点数的情况）");
+        scene->addChild(text);
+        text->setAnchor(0.5f, 0.5f);
+        text->setPos(800, 70);
+
+        for (int i = 0; i < 3; i++)
         {
-            out_brick[i]->runAction(out_bricks_ani[i]);
+            auto a = gcnew Shape(Shape::Rect, Rect(Point(500 + 120 * i, 700), Size(70, 70)));
+            SPAces[i] = gcnew ShapeNode(a);
+            SPAces[i]->setFillColor(Color::Chocolate);
+            space_num[i] = gcnew Text("111");
+            space_num[i]->setFont(Font("Arial", 35));
+            space_num[i]->setFillColor(Color::White);
+            space_num[i]->setAnchor(0.5f, 0.5f);
+            space_num[i]->setPos(525 + 120 * i, 725);
+            SPAces[i]->addChild(space_num[i]);
+            scene->addChild(SPAces[i]);
         }
-        check();
-        
-        //Game::pause();
-        if (error_flag == false)
+
+        for (int i = 0; i < 8; i++) {
+            brick[i] = new Node();
+            square[i] = new Sprite("C:\\Users\\jayde\\source\\repos\\easy2d\\block4.png");
+            string num0 = to_string(input[i]);
+            number[i] = new Text(num0);
+            number[i]->setAnchor(0.5f, 0.5f);
+            number[i]->setPos(25, 25);
+            brick[i]->addChild(square[i]);
+            brick[i]->addChild(number[i]);
+            scene->addChild(brick[i]);
+            brick[i]->setAnchor(0.5f, 0.5f);
+            brick[i]->setPos(220, 200 + 60 * i);
+        }
+
+        scene->addChild(robot);
+        robot->setAnchor(0.5f, 0.5f);
+        robot->setPos(180, 200);
+
+
+        scene->addChild(pointer0);
+        pointer0->setAnchor(1, 0.5f);
+        pointer0->setPos(640, 150);
+
+
+        //end GUI
+    }
+
+
+    int i = 0, out_index = 0;
+
+    auto rb_se = gcnew Sequence();
+    auto point_se = gcnew Sequence();
+    auto stopp = gcnew Delay(2.5);//每一步的延迟2.5s
+    auto del2 = gcnew Delay(0.5);//每一步的延迟2.5s
+
+    out_brick[0] = new Node();
+    out_square[0] = new Sprite;
+    out_num[0] = new Text;
+
+
+
+    while (i < instruction_count) {
+        if (error_flag)
+            break;
+
+        addstop(rb_se, position);
+        if (instructions[i].name == "inbox") {
+            inbox(i, out_index, rb_se, rb_text, stopp);//3s
+        }
+        else if (instructions[i].name == "outbox") {
+            outbox(i, out_index, rb_se, scene, rb_text, stopp);//3s
+            out_index++;//画图用
+            destination_count++;
+        }
+        else if (instructions[i].name == "add" && level != 1 && instructions[i].is_num_int) {
+            add(i, instructions[i].number, out_index, rb_se, rb_text, stopp);
+        }
+        else if (instructions[i].name == "sub" && level != 1 && instructions[i].is_num_int) {
+            sub(i, instructions[i].number, out_index, rb_se, rb_text, stopp);
+        }
+        else if (instructions[i].name == "copyto" && level != 1 && instructions[i].is_num_int) {
+            copyto(i, instructions[i].number, out_index, rb_se, space_num[instructions[i].number], stopp);
+        }
+        else if (instructions[i].name == "copyfrom" && level != 1 && instructions[i].is_num_int) {
+            copyfrom(i, instructions[i].number, out_index, rb_se, rb_text, stopp);
+        }
+        else if (instructions[i].name == "jump" && level != 1 && instructions[i].is_num_int) {
+            jump(i, instructions[i].number, robot);
+        }
+        else if (instructions[i].name == "jumpifzero" && level != 1 && instructions[i].is_num_int) {
+            jumpifzero(i, instructions[i].number, robot);
+        }
+        else {
+            cout << "Error on instruction " << (i + 1) << endl;
             return true;
+        }
+
+        if (inbox_done)
+            break;
+
+        i++;
+
+        if (error_flag == false) {
+            auto movePointer = gcnew MoveTo(2.5f, Point(640, 150 + i * 15));
+            point_se->add(movePointer);
+            point_se->add(del2);
+        }
 
 
     }
-    /* 销毁资源 */
 
+    if (error_flag == true)
+        return false;
 
+    addstop(rb_se, position);
 
+    auto check1 = gcnew CallFunc([scene]() {check(scene); });
+    rb_se->add(check1);
+    robot->runAction(rb_se->clone());
+    for (int i = 0; i < bricks_ani.size(); i++)
+    {
+        brick[i]->runAction(bricks_ani[i]->clone());
+    }
+    for (int i = 0; i < out_bricks_ani.size(); i++)
+    {
+        out_brick[i]->runAction(out_bricks_ani[i]->clone());
+    }
+
+    Game::start();
+
+    rb_se->release();
+    //Game::pause();
+
+    if (error_flag == false)
+        return true;
+
+}
+
+void cleanchild(Scene* scene)//不要动它
+{
+    for (int i = 0; i < bricks_ani.size(); i++)
+    {
+        bricks_ani[i]->release();
+    }
+    for (int i = 0; i < out_bricks_ani.size(); i++)
+    {
+        out_bricks_ani[i]->release();
+    }
+    out_bricks_ani.clear();
+    bricks_ani.clear();
+    SceneManager::clear();
+    //scene->release();
 }
 
 int main()
 {
-    //原本input、target、availables、spaces在这里定义
-    int a;
-    string retry;
-    //初始化
-    do
+    if (Game::init())
     {
-        a = Load_menu();//加载目录
-    } while (!(a + 1));
-    while (!quit)
-    {
-        upload_data(levels);
-
-        Menu();//显示目录
-
-        int spacenumber;//初始化;spacenumber:space number
-        do {
-            spacenumber = initial(/*input,target,availables*/);
-        } while (!(spacenumber + 1) && !quit);
-
-
-        if (quit)//退出游戏
-            break;
-
-        space.resize(spacenumber);
-
-        //正式开始运行关卡
-        succeed = 0;
-        while (!succeed)//游戏进行中
+        int a;
+        string retry;
+        //初始化
+        do
         {
+            a = Load_menu();//加载目录
+        } while (!(a + 1));
+        while (!quit)
+        {
+            upload_data(levels);
 
-            const string last_inp = "C:\\Users\\jayde\\source\\repos\\easy2d\\user_level" + levels + ".txt";
-            load_instructions_from_file(last_inp, last_instructions);//按行存储上一次的指令
+            Menu();//显示目录
 
-            show_init();//显示界面
+            int spacenumber;//初始化;spacenumber:space number
+            do {
+                spacenumber = initial(/*input,target,availables*/);
+            } while (!(spacenumber + 1) && !quit);
 
-            user_input_cons();
-            succeed = 0;
-            succeed = run();
 
-            Game::pause();
-            if (succeed)
-            {
-                user_levels[level] = 1;
+            if (quit)//退出游戏
                 break;
-            }
 
-            else//失败重新尝试
+
+            space.resize(spacenumber);
+
+            //正式开始运行关卡
+            succeed = 0;
+            while (!succeed)//游戏进行中
             {
-                cout << "Enter R to retry." << endl;//文件输入暂时无法实现retry功能
-                cin >> retry;
-                if (retry == "R")
-                    continue;
-                else
+
+                //Game::init();
+                error_flag = false;
+                const string last_inp = "C:\\Users\\jayde\\source\\repos\\easy2d\\user_level" + levels + ".txt";
+                load_instructions_from_file(last_inp, last_instructions);//按行存储上一次的指令
+
+                show_init();//显示界面
+
+                Window::setTitle("111");
+                Window::setSize(1600, 900);
+                auto scene = new Scene;
+                SceneManager::enter(scene);
+
+                user_input_cons(scene);
+
+
+                succeed = 0;
+                position = 0;
+                output.clear();
+                output.resize(0);
+                bool no_error = run(scene);
+
+                if (!no_error)
+                    succeed = false;
+
+
+                //以下别碰，我也不知道怎么跑起来的……
+                //Game::pause();
+                if (succeed)
+                {
+                    user_levels[level] = 1;
+                    SceneManager::back();
+                    cleanchild(scene);
+                    Game::reset();
                     break;
+                }
+
+                else//失败重新尝试
+                {
+                    cout << "Enter R to retry." << endl;//文件输入暂时无法实现retry功能
+                    cin >> retry;
+                    if (retry == "R")
+                    {
+                        cleanchild(scene);
+                        Game::reset();
+                    }
+                    else
+                    {
+                        cleanchild(scene);
+                        Game::reset();
+                        break;
+                    }
+
+                }
             }
         }
     }
-
-
     delete(pointer0);
     Game::destroy();
     return 0;
