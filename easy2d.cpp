@@ -591,7 +591,7 @@ void load_instructions_from_file(const string& file_path, vector<INSTRUCTIONS>in
             cout << "File not found: " << file_path << endl;
             return;
         }
-        file >> tmp;
+        //file >> tmp;
         if (file.eof())//可能用户第一次玩，没有数据
             return;
 
