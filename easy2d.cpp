@@ -1298,6 +1298,22 @@ void jumpifzero(int& i, int x, easy2d::Sprite* robot) {//缺少指针动画
     }
 }
 
+void jumpifnegative(int& i, int x, easy2d::Sprite* robot) {
+    if (current_block < 0) {
+        if (x > 0 && x <= instruction_count)
+            i = x - 2;
+        else {
+            errortext = "Error on instruction " + std::to_string(i + 1);
+            error_flag = true;
+        }
+    }
+    else {
+        if (current_block == INT_MIN) {
+            errortext = "Error on instruction " + std::to_string(i + 1);
+            error_flag = true;
+        }
+    }
+}
 void addstop(int i, Sequence* rb_se, Sequence* point_se, int pos)
 {
     auto ani_pause = gcnew Delay(0.5);
@@ -1472,6 +1488,9 @@ bool run_ins(Scene* scene, Sprite* robot, Sprite* pointer0, Text* rb_text)
         }
         else if (instructions[i].name == "jumpifzero" && level != 1 && instructions[i].is_num_int) {
             jumpifzero(i, instructions[i].number, robot);
+        }
+        else if (instructions[i].name == "jumpifnegative" && level == 4 && instructions[i].is_num_int) {
+            jumpifnegative(i, instructions[i].number, robot);
         }
         else {
             errortext = "Error on instruction " + std::to_string(i + 1);
@@ -1739,7 +1758,7 @@ bool run(Scene* scene) {
         space.resize(spacenumber, INT_MIN);
 
         //begin GUI
-        auto text = new Text("第四关：从输入序列上连续取两个数，比较它们是否相等；如果相等则将其中一个放在输出序列上，否则全部销毁。重复。");
+        auto text = new Text("第四关：计算两个数的最大公约数。（提示：使用辗转相减法）");
         scene->addChild(text);
         text->setAnchor(0.5f, 0.5f);
         text->setPos(800, 70);
